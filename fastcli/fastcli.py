@@ -25,7 +25,7 @@ logger_name = "{} :: {}".format(__file__, __name__)
 logger = logging.getLogger(logger_name)
 
 
-async def test_speed(session: aiohttp.ClientSession, url: str):
+async def test_download_speed(session: aiohttp.ClientSession, url: str):
     result = 0
     try:
         async with session.get(url) as resp:
@@ -67,14 +67,10 @@ def get_token() -> str:
     return token
 
 
-def main(token: str='', timeout: typing.Union[float, int]=10.0, https:
-         bool=True, url_count: int=3):
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+async def main(token: str='', timeout: typing.Union[float, int]=10.0, https:
+        bool=True, url_count: int=3):
 
     token = token or get_token()
-    api_base = 'https://api.fast.com'
 
     params = {
         'https': True,
@@ -82,7 +78,9 @@ def main(token: str='', timeout: typing.Union[float, int]=10.0, https:
         'token': token
         }
     query_str = urllib.parse.urlencode({k: str(v) for k, v in params.items()})
-    url = api_base + '/netflix/speedtest?' + query_str
+
+    api_base = 'https://api.fast.com'
+    url = f"{api_base}/netflix/speedtest/v2?{query_str}"
 
     req = urllib.request.Request(url)
     with urllib.request.urlopen(req) as r:
@@ -91,21 +89,16 @@ def main(token: str='', timeout: typing.Union[float, int]=10.0, https:
 
     start_time = time.time()
 
-    with aiohttp.ClientSession() as session:
-        coros = [test_speed(session, url['url'])
-                 for url in resp_json]
-        fut = asyncio.gather(*coros)
-        try:
-            loop.run_until_complete(asyncio.wait_for(fut, timeout=timeout))
-        except asyncio.TimeoutError:
-            loop.run_until_complete(fut)
-        finally:
-            loop.close()
+    async with aiohttp.ClientSession() as session:
+        coros = [test_download_speed(session, target['url'])
+                 for target in resp_json["targets"]]
+        download_futs = asyncio.gather(*coros)
+        await asyncio.wait_for(download_futs, timeout=timeout)
 
     duration = time.time() - start_time
     logger.info("Run time: {:.2f} seconds".format(duration))
 
-    mb = sum(fut.result()) * 8 / 1024 / 1024
+    mb = sum(download_futs.result()) * 8 / 1024 / 1024
     return mb / duration
 
 
@@ -113,12 +106,13 @@ def cli() -> None:
     logging.info("Starting fastcli download speed test...")
     parser = argparse.ArgumentParser(prog='fastcli',
                                      argument_default=argparse.SUPPRESS)
-    parser.add_argument('--timeout', default=10, type=float,
+    parser.add_argument('--timeout', default=30, type=float,
                         help="Duration of time to run speed test")
     namespace = parser.parse_args()
     args = {k: v for k, v in vars(namespace).items() if v}
 
-    speed = main(**args)
+    loop = asyncio.new_event_loop()
+    speed = loop.run_until_complete(main(**args))
     print("Approximate download speed: {:.2f} Mbps".format(speed))
 
 
