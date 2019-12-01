@@ -102,17 +102,20 @@ async def main(token: str = '', timeout: typing.Union[float, int] = 10.0, https:
     return mb / duration
 
 
-def cli() -> None:
+def run(*, timeout: float = 30, verbosity = logging.WARNING) -> float:
     logging.info("Starting fastcli download speed test...")
+    loop = asyncio.new_event_loop()
+    speed = loop.run_until_complete(main(timeout=timeout, verbosity=verbosity))
+    return speed
+
+def cli() -> None:
     parser = argparse.ArgumentParser(prog='fastcli',
                                      argument_default=argparse.SUPPRESS)
     parser.add_argument('--timeout', default=30, type=float,
                         help="Duration of time to run speed test")
     namespace = parser.parse_args()
     args = {k: v for k, v in vars(namespace).items() if v}
-
-    loop = asyncio.new_event_loop()
-    speed = loop.run_until_complete(main(**args))
+    speed = run(**args)
     print("Approximate download speed: {:.2f} Mbps".format(speed))
 
 

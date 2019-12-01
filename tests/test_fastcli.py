@@ -35,4 +35,4 @@ def internet_is_on():
 def test_fastcli():
     """If an internet connect exists, it should have a measurable speed > 0"""
     if internet_is_on():
-        assert fastcli.main(timeout=1) > 0
+        assert fastcli.run(timeout=1) > 0
