@@ -67,8 +67,8 @@ def get_token() -> str:
     return token
 
 
-async def main(token: str='', timeout: typing.Union[float, int]=10.0, https:
-        bool=True, url_count: int=3):
+async def main(token: str = '', timeout: typing.Union[float, int] = 10.0, https:
+        bool = True, url_count: int = 3, verbosity: int = logging.WARNING):
 
     token = token or get_token()
 
