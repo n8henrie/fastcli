@@ -6,4 +6,7 @@ python:
   - 3.8
 
 install: pip install tox
-script: tox -r -e $(echo py${TRAVIS_PYTHON_VERSION} | tr -d . | sed -e 's/pypypy/pypy/')
+script:
+  - tox -r -e $(echo py${TRAVIS_PYTHON_VERSION} | tr -d . | sed -e 's/pypypy/pypy/')
+  - tox -e lint
+  - tox -e docs
