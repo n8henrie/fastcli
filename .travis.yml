@@ -4,14 +4,6 @@ python:
   - 3.6
   - 3.7
   - 3.8
-env:
-  - TOXENV=py35
-  - TOXENV=docs
 
-addons:
-  apt:
-    packages:
-    - pandoc
 install: pip install tox
-script: tox
-after_failure: cat .tox/log/tox-*.log
+script: tox -r -e $(echo py${TRAVIS_PYTHON_VERSION} | tr -d . | sed -e 's/pypypy/pypy/')
