@@ -84,7 +84,7 @@ async def main(
     query_str = urllib.parse.urlencode({k: str(v) for k, v in params.items()})
 
     api_base = "https://api.fast.com"
-    url = f"{api_base}/netflix/speedtest/v2?{query_str}"
+    url = "{}/netflix/speedtest/v2?{}".format(api_base, query_str)
 
     req = urllib.request.Request(url)
     with urllib.request.urlopen(req) as r:
