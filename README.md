@@ -1,6 +1,7 @@
 # fastcli
 
-[![Build Status](https://travis-ci.org/n8henrie/fastcli.svg?branch=master)](https://travis-ci.org/n8henrie/fastcli)
+[![master branch build
+status](https://github.com/n8henrie/fastcli/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/n8henrie/fastcli/actions/workflows/python-package.yml)
 
 Python3 CLI script for fast.com
 
