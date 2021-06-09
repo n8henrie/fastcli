@@ -48,7 +48,7 @@ clean-docs:
 	rm -f docs/modules.rst
 
 docs: clean-docs
-	source venv/bin/activate && sphinx-apidoc -o docs/ fastcli
+	source ./.venv/bin/activate && sphinx-apidoc -o docs/ fastcli
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	open docs/_build/html/index.html
@@ -65,9 +65,9 @@ dist: clean docs
 	$(PYTHON) setup.py bdist_wheel
 	ls -l dist
 
-venv:
-	$(PYTHON) -m venv venv
-	venv/bin/pip install --upgrade pip wheel
+.venv:
+	$(PYTHON) -m venv .venv
+	./.venv/bin/python -m pip install --upgrade pip wheel
 
 update-reqs: requirements.txt
 	@$(GREP) --invert-match --no-filename '^#' requirements*.txt | \
