@@ -42,13 +42,13 @@ setup(
     classifiers=[
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6"
-        "Programming Language :: Python :: 3.7"
-        "Programming Language :: Python :: 3.8"
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
     extras_require={
         "dev": dev_requirements
         },
     test_suite="tests",
-    tests_require=['pytest==3.0.4']
+    tests_require=['pytest==6.2.4']
 )
