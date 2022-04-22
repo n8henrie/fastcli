@@ -11,6 +11,7 @@ import logging
 import time
 import urllib.parse
 import urllib.request
+from xmlrpc.client import Boolean
 
 import aiohttp
 import typing
@@ -70,7 +71,7 @@ def _get_token() -> str:
     return token
 
 
-async def main(
+async def download(
     token: str = "",
     timeout: typing.Union[float, int] = 10.0,
     https: bool = True,
@@ -111,19 +112,28 @@ async def main(
     return mb / duration
 
 
-def run(*, timeout: float = 30, verbosity: int = logging.WARNING) -> float:
+def run(*, timeout: float = 30, verbosity: int = logging.WARNING, json: Boolean = False) -> float:
     """Create eventloop and run main coroutine."""
     logging.info("Starting fastcli download speed test...")
     loop = asyncio.new_event_loop()
-    speed = loop.run_until_complete(main(timeout=timeout, verbosity=verbosity))
+    download_speed = loop.run_until_complete(download(timeout=timeout, verbosity=verbosity))
     loop.close()
-    return speed
+    thedict = {
+        "download_speed" : download_speed
+    }
+    return thedict
 
 
 def cli() -> None:
     """Parse CLI arguments."""
     parser = argparse.ArgumentParser(
-        prog="fastcli", argument_default=argparse.SUPPRESS
+        prog="fastcli"
+    )
+    parser.add_argument(
+        "--json",
+        default=False,
+        action='store_true',
+        help="write json to sysout instead of formatted results",
     )
     parser.add_argument(
         "--timeout",
@@ -140,8 +150,12 @@ def cli() -> None:
     )
     namespace = parser.parse_args()
     args = {k: v for k, v in vars(namespace).items() if v}
-    speed = run(**args)
-    print("Approximate download speed: {:.2f} Mbps".format(speed))
+    thedict = run(**args)
+    try: 
+        if args["json"]:
+            print(json.dumps(thedict))
+    except:
+        print("Approximate download speed: {:.2f} Mbps".format(thedict['download_speed']))
 
 
 if __name__ == "__main__":
