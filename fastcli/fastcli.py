@@ -15,6 +15,7 @@ import urllib.request
 
 import aiohttp
 import typing
+import re
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -28,8 +29,6 @@ logger = logging.getLogger(logger_name)
 
 async def test_download_speed(session: aiohttp.ClientSession, url: str) -> int:
     """Count the amount of data successfully downloaded."""
-    print("test_download_speed started")
-    print(url)
     result = 0
     try:
         async with session.get(url) as resp:
@@ -97,24 +96,35 @@ def _get_targets(url_count, token):
         return targets
 
 
+def _get_target_urls_with_numbytes(targets, numbytes):
+    target_urls = [
+        re.sub("/speedtest","/speedtest/range/0-" + str(numbytes), target["url"])
+        for target in targets
+    ]
+
+    return target_urls
+
+
 async def download(
     token: str = "",
     timeout: typing.Union[float, int] = 10.0,
     https: bool = True,
     url_count: int = 3,
     verbosity: int = logging.WARNING,
+    numbytes: int = 26214400,
 ) -> float:
     """Create coroutines for speedtest and return results."""
     token = token or _get_token()
 
     targets = _get_targets(url_count, token)
+    target_urls = _get_target_urls_with_numbytes(targets, numbytes)
 
     start_time = time.time()
 
     async with aiohttp.ClientSession() as session:
         coros = [
-            test_download_speed(session, target["url"])
-            for target in targets
+            test_download_speed(session, target_url)
+            for target_url in target_urls
         ]
         done, pending = await asyncio.wait(coros, timeout=timeout)
         for task in pending:
@@ -129,11 +139,11 @@ async def download(
     return mb / duration
 
 
-def run(*, timeout: float = 30, verbosity: int = logging.WARNING) -> float:
+def run(*, timeout: float = 30, verbosity: int = logging.WARNING, numbytes: int = 26214400) -> float:
     """Create eventloop and run main coroutine."""
     logging.info("Starting fastcli download speed test...")
     loop = asyncio.new_event_loop()
-    download_speed = loop.run_until_complete(download(timeout=timeout, verbosity=verbosity))
+    download_speed = loop.run_until_complete(download(timeout=timeout, verbosity=verbosity, numbytes=numbytes))
     loop.close()
     return download_speed
 
@@ -158,7 +168,8 @@ def cli() -> None:
     )
     namespace = parser.parse_args()
     args = {k: v for k, v in vars(namespace).items() if v}
-    download_speed = run(**args)
+    max_payload_bytes=26214400
+    download_speed = run(**args, numbytes=max_payload_bytes)
     print("Approximate download speed: {:.2f} Mbps".format(download_speed))
 
 
