@@ -3,6 +3,8 @@
 Usage:
     python3 -m fastcli
 """
+version = "0.1.2"
+max_payload_bytes=26214400
 
 import argparse
 import asyncio
@@ -104,6 +106,20 @@ def _get_target_urls_with_numbytes(targets, numbytes):
 
     return target_urls
 
+def _get_client_info(token: str = ""):
+    token = token or _get_token()
+    targets = _get_targets(1, token)
+    target_url = _get_target_urls_with_numbytes(targets, 1)
+    url = _build_req_url(1, token)
+    
+    req = urllib.request.Request(url)
+    with urllib.request.urlopen(req) as r:
+        resp = r.read().decode()
+    resp_json = json.loads(resp)
+
+    client_info = resp_json["client"]
+
+    return client_info
 
 async def download(
     token: str = "",
@@ -111,7 +127,7 @@ async def download(
     https: bool = True,
     url_count: int = 3,
     verbosity: int = logging.WARNING,
-    numbytes: int = 26214400,
+    numbytes: int = max_payload_bytes,
 ) -> float:
     """Create coroutines for speedtest and return results."""
     token = token or _get_token()
@@ -139,7 +155,7 @@ async def download(
     return mb / duration
 
 
-def run(*, timeout: float = 30, verbosity: int = logging.WARNING, numbytes: int = 26214400) -> float:
+def run(*, timeout: float = 30, verbosity: int = logging.WARNING, numbytes: int = max_payload_bytes) -> float:
     """Create eventloop and run main coroutine."""
     logging.info("Starting fastcli download speed test...")
     loop = asyncio.new_event_loop()
@@ -168,7 +184,15 @@ def cli() -> None:
     )
     namespace = parser.parse_args()
     args = {k: v for k, v in vars(namespace).items() if v}
-    max_payload_bytes=26214400
+
+    print('version:',version)
+
+    client_info = _get_client_info()
+    print('your ip:',client_info["ip"])
+    print('your ISP:',client_info["isp"])
+    print('test location city:',client_info["location"]["city"])
+    print('test location country:',client_info["location"]["country"]) 
+
     download_speed = run(**args, numbytes=max_payload_bytes)
     print("Approximate download speed: {:.2f} Mbps".format(download_speed))
 
