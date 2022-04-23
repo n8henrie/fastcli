@@ -7,6 +7,7 @@ Usage:
 import argparse
 import asyncio
 import json
+from locale import strcoll
 import logging
 import time
 import urllib.parse
@@ -27,6 +28,8 @@ logger = logging.getLogger(logger_name)
 
 async def test_download_speed(session: aiohttp.ClientSession, url: str) -> int:
     """Count the amount of data successfully downloaded."""
+    print("test_download_speed started")
+    print(url)
     result = 0
     try:
         async with session.get(url) as resp:
@@ -70,7 +73,31 @@ def _get_token() -> str:
     return token
 
 
-async def main(
+def _build_req_url(url_count, token) -> str:
+    import urllib.parse
+    
+    params = {"https": True, "urlCount": url_count, "token": token}
+    query_str = urllib.parse.urlencode({k: str(v) for k, v in params.items()})
+
+    api_base = "https://api.fast.com"
+    url = "{}/netflix/speedtest/v2?{}".format(api_base, query_str)
+
+    return url
+
+
+def _get_targets(url_count, token):
+        url = _build_req_url(url_count, token)
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req) as r:
+            resp = r.read().decode()
+        resp_json = json.loads(resp)
+
+        targets = resp_json["targets"]
+
+        return targets
+
+
+async def download(
     token: str = "",
     timeout: typing.Union[float, int] = 10.0,
     https: bool = True,
@@ -80,23 +107,14 @@ async def main(
     """Create coroutines for speedtest and return results."""
     token = token or _get_token()
 
-    params = {"https": True, "urlCount": 3, "token": token}
-    query_str = urllib.parse.urlencode({k: str(v) for k, v in params.items()})
-
-    api_base = "https://api.fast.com"
-    url = "{}/netflix/speedtest/v2?{}".format(api_base, query_str)
-
-    req = urllib.request.Request(url)
-    with urllib.request.urlopen(req) as r:
-        resp = r.read().decode()
-    resp_json = json.loads(resp)
+    targets = _get_targets(url_count, token)
 
     start_time = time.time()
 
     async with aiohttp.ClientSession() as session:
         coros = [
             test_download_speed(session, target["url"])
-            for target in resp_json["targets"]
+            for target in targets
         ]
         done, pending = await asyncio.wait(coros, timeout=timeout)
         for task in pending:
@@ -115,9 +133,9 @@ def run(*, timeout: float = 30, verbosity: int = logging.WARNING) -> float:
     """Create eventloop and run main coroutine."""
     logging.info("Starting fastcli download speed test...")
     loop = asyncio.new_event_loop()
-    speed = loop.run_until_complete(main(timeout=timeout, verbosity=verbosity))
+    download_speed = loop.run_until_complete(download(timeout=timeout, verbosity=verbosity))
     loop.close()
-    return speed
+    return download_speed
 
 
 def cli() -> None:
@@ -140,8 +158,8 @@ def cli() -> None:
     )
     namespace = parser.parse_args()
     args = {k: v for k, v in vars(namespace).items() if v}
-    speed = run(**args)
-    print("Approximate download speed: {:.2f} Mbps".format(speed))
+    download_speed = run(**args)
+    print("Approximate download speed: {:.2f} Mbps".format(download_speed))
 
 
 if __name__ == "__main__":
