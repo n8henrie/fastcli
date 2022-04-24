@@ -11,7 +11,6 @@ import logging
 import time
 import urllib.parse
 import urllib.request
-from xmlrpc.client import Boolean
 
 import aiohttp
 import typing
@@ -71,7 +70,7 @@ def _get_token() -> str:
     return token
 
 
-async def download(
+async def main(
     token: str = "",
     timeout: typing.Union[float, int] = 10.0,
     https: bool = True,
@@ -109,25 +108,22 @@ async def download(
 
     results = [task.result() for task in done | pending]
     mb = sum(results) * 8 / 1024 / 1024
-    return mb / duration
+    return mb / duration, resp_json
 
 
-def run(*, timeout: float = 30, verbosity: int = logging.WARNING, json: Boolean = False) -> float:
+def run(*, timeout: float = 30, verbose: int = logging.WARNING, json: bool = False) -> float:
     """Create eventloop and run main coroutine."""
     logging.info("Starting fastcli download speed test...")
     loop = asyncio.new_event_loop()
-    download_speed = loop.run_until_complete(download(timeout=timeout, verbosity=verbosity))
+    speed, resp_json = loop.run_until_complete(main(timeout=timeout, verbosity=verbose))
     loop.close()
-    thedict = {
-        "download_speed" : download_speed
-    }
-    return thedict
+    return speed, resp_json
 
 
 def cli() -> None:
     """Parse CLI arguments."""
     parser = argparse.ArgumentParser(
-        prog="fastcli"
+        prog="fastcli", argument_default=argparse.SUPPRESS
     )
     parser.add_argument(
         "--json",
@@ -149,13 +145,19 @@ def cli() -> None:
         help="increase verbosity (may repeat up to -vvv)",
     )
     namespace = parser.parse_args()
-    args = {k: v for k, v in vars(namespace).items() if v}
-    thedict = run(**args)
-    try: 
-        if args["json"]:
-            print(json.dumps(thedict))
-    except:
-        print("Approximate download speed: {:.2f} Mbps".format(thedict['download_speed']))
+    args = {k: v for k, v in vars(namespace).items()}
+    speed, resp_json = run(**args)
+
+    if args['json'] and args['verbose'] > 0:
+        output_json = resp_json
+        output_json["download_speed"]=speed
+        print(json.dumps(output_json))
+    elif args['json']:
+        output_json = {}
+        output_json["download_speed"]=speed
+        print(json.dumps(output_json))
+    else:
+        print("Approximate download speed: {:.2f} Mbps".format(speed))
 
 
 if __name__ == "__main__":
