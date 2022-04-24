@@ -108,14 +108,14 @@ async def main(
 
     results = [task.result() for task in done | pending]
     mb = sum(results) * 8 / 1024 / 1024
-    return mb / duration
+    return mb / duration, resp_json
 
 
-def run(*, timeout: float = 30, verbosity: int = logging.WARNING) -> float:
+def run(*, timeout: float = 30, verbose: int = logging.WARNING) -> float:
     """Create eventloop and run main coroutine."""
     logging.info("Starting fastcli download speed test...")
     loop = asyncio.new_event_loop()
-    speed = loop.run_until_complete(main(timeout=timeout, verbosity=verbosity))
+    speed = loop.run_until_complete(main(timeout=timeout, verbosity=verbose))
     loop.close()
     return speed
 
@@ -139,8 +139,16 @@ def cli() -> None:
         help="increase verbosity (may repeat up to -vvv)",
     )
     namespace = parser.parse_args()
-    args = {k: v for k, v in vars(namespace).items() if v}
-    speed = run(**args)
+    args = {k: v for k, v in vars(namespace).items()}
+    speed, resp_json = run(**args)
+
+    if args['verbose'] > 0:
+        client_info = resp_json["client"]
+        print('Your ip:',client_info["ip"])
+        print('Your ISP:',client_info["isp"])
+        print('Test location city:',client_info["location"]["city"])
+        print('Test location country:',client_info["location"]["country"]) 
+
     print("Approximate download speed: {:.2f} Mbps".format(speed))
 
 
