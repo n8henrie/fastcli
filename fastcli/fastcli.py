@@ -133,7 +133,7 @@ def cli() -> None:
     )
     parser.add_argument(
         "-v",
-        "--verbose",
+        "--verbosity",
         default=0,
         action="count",
         help="increase verbosity (may repeat up to -vvv)",
