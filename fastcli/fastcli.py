@@ -11,6 +11,7 @@ import logging
 import time
 import urllib.parse
 import urllib.request
+from asyncio import create_task
 
 import aiohttp
 import typing
@@ -25,7 +26,9 @@ logger_name = "{} :: {}".format(__file__, __name__)
 logger = logging.getLogger(logger_name)
 
 
-async def test_download_speed(session: aiohttp.ClientSession, url: str) -> int:
+async def test_download_speed(
+    session: aiohttp.ClientSession, url: str
+) -> int:
     """Count the amount of data successfully downloaded."""
     result = 0
     try:
@@ -94,11 +97,11 @@ async def main(
     start_time = time.time()
 
     async with aiohttp.ClientSession() as session:
-        coros = [
-            test_download_speed(session, target["url"])
+        coro_tasks = [
+            create_task(test_download_speed(session, target["url"]))
             for target in resp_json["targets"]
         ]
-        done, pending = await asyncio.wait(coros, timeout=timeout)
+        done, pending = await asyncio.wait(coro_tasks, timeout=timeout)
         for task in pending:
             task.cancel()
             await task
