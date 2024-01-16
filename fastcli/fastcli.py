@@ -26,7 +26,7 @@ logger_name = "{} :: {}".format(__file__, __name__)
 logger = logging.getLogger(logger_name)
 
 
-async def test_download_speed(
+async def run_download_speed_test(
     session: aiohttp.ClientSession, url: str
 ) -> int:
     """Count the amount of data successfully downloaded."""
@@ -98,7 +98,7 @@ async def main(
 
     async with aiohttp.ClientSession() as session:
         coro_tasks = [
-            create_task(test_download_speed(session, target["url"]))
+            create_task(run_download_speed_test(session, target["url"]))
             for target in resp_json["targets"]
         ]
         done, pending = await asyncio.wait(coro_tasks, timeout=timeout)
