@@ -9,12 +9,12 @@ import asyncio
 import json
 import logging
 import time
+import typing
 import urllib.parse
 import urllib.request
 from asyncio import create_task
 
 import aiohttp
-import typing
 
 logging.basicConfig(
     level=logging.WARNING,
