@@ -23,7 +23,7 @@
       in
       {
         packages = {
-          default = pkgs.python311.withPackages (_: [ self.packages.${system}.${pname} ]);
+          default = pkgs.python312.withPackages (_: [ self.packages.${system}.${pname} ]);
           ${pname} = pkgs.callPackage (
             { lib, python3Packages }:
             python3Packages.buildPythonPackage {
