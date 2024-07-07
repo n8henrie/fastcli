@@ -1,9 +1,0 @@
-black
-flake8
-mypy
-pytest
-recommonmark
-sphinx
-sphinx-rtd-theme
-tox
-twine
